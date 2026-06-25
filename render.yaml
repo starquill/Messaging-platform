@@ -15,10 +15,6 @@ services:
         value: https://signal-frontend.onrender.com
       - key: UPLOAD_DIR
         value: ./uploads
-    disk:
-      name: signal-data
-      mountPath: /app/data
-      sizeGB: 1
 
   - type: web
     name: signal-frontend
@@ -31,5 +27,3 @@ services:
         value: https://signal-backend.onrender.com
       - key: NEXT_PUBLIC_WS_URL
         value: wss://signal-backend.onrender.com/ws
-    buildCommand: ""
-    dockerCommand: ""

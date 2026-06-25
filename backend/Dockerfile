@@ -13,4 +13,4 @@ RUN mkdir -p data uploads/avatars uploads/attachments
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["sh", "-c", "python -m app.seed.seed_data && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1"]
