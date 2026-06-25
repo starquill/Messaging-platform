@@ -390,3 +390,248 @@ async def delete_conversation(
 
     await db.delete(member)
     await db.commit()
+
+
+@router.get("/{conversation_id}/members", response_model=list[ConversationMemberResponse])
+async def list_members(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    member_check = await db.execute(
+        select(ConversationMember).where(
+            and_(
+                ConversationMember.conversation_id == conversation_id,
+                ConversationMember.user_id == current_user.id,
+            )
+        )
+    )
+    if not member_check.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Not a member")
+
+    members_result = await db.execute(
+        select(ConversationMember).where(
+            ConversationMember.conversation_id == conversation_id
+        )
+    )
+    members = members_result.scalars().all()
+
+    response = []
+    for m in members:
+        user_result = await db.execute(select(User).where(User.id == m.user_id))
+        u = user_result.scalar_one_or_none()
+        response.append(
+            ConversationMemberResponse(
+                id=m.id,
+                conversation_id=m.conversation_id,
+                user_id=m.user_id,
+                role=m.role,
+                joined_at=m.joined_at,
+                last_read_message_id=m.last_read_message_id,
+                last_read_at=m.last_read_at,
+                user=user_to_response(u) if u else None,
+            )
+        )
+    return response
+
+
+from pydantic import BaseModel
+
+
+class AddMemberRequest(BaseModel):
+    user_id: str
+
+
+class ChangeRoleRequest(BaseModel):
+    role: str
+
+
+@router.post("/{conversation_id}/members", response_model=ConversationMemberResponse, status_code=status.HTTP_201_CREATED)
+async def add_member(
+    conversation_id: str,
+    request: AddMemberRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    conv_result = await db.execute(
+        select(Conversation).where(Conversation.id == conversation_id)
+    )
+    conv = conv_result.scalar_one_or_none()
+    if not conv or conv.type != "group":
+        raise HTTPException(status_code=400, detail="Can only add members to group conversations")
+
+    admin_check = await db.execute(
+        select(ConversationMember).where(
+            and_(
+                ConversationMember.conversation_id == conversation_id,
+                ConversationMember.user_id == current_user.id,
+            )
+        )
+    )
+    admin = admin_check.scalar_one_or_none()
+    if not admin or admin.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can add members")
+
+    user_result = await db.execute(select(User).where(User.id == request.user_id))
+    new_user = user_result.scalar_one_or_none()
+    if not new_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    existing = await db.execute(
+        select(ConversationMember).where(
+            and_(
+                ConversationMember.conversation_id == conversation_id,
+                ConversationMember.user_id == request.user_id,
+            )
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="User is already a member")
+
+    member = ConversationMember(
+        id=uuid.uuid4().hex,
+        conversation_id=conversation_id,
+        user_id=request.user_id,
+        role="member",
+    )
+    db.add(member)
+
+    system_msg = Message(
+        id=uuid.uuid4().hex,
+        conversation_id=conversation_id,
+        sender_id=current_user.id,
+        content=f"{current_user.display_name} added {new_user.display_name}",
+        type="system",
+    )
+    db.add(system_msg)
+
+    conv.updated_at = datetime.utcnow()
+    await db.commit()
+
+    return ConversationMemberResponse(
+        id=member.id,
+        conversation_id=member.conversation_id,
+        user_id=member.user_id,
+        role=member.role,
+        joined_at=member.joined_at,
+        last_read_message_id=None,
+        last_read_at=None,
+        user=user_to_response(new_user),
+    )
+
+
+@router.delete("/{conversation_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_member(
+    conversation_id: str,
+    user_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    conv_result = await db.execute(
+        select(Conversation).where(Conversation.id == conversation_id)
+    )
+    conv = conv_result.scalar_one_or_none()
+    if not conv or conv.type != "group":
+        raise HTTPException(status_code=400, detail="Can only remove members from group conversations")
+
+    admin_check = await db.execute(
+        select(ConversationMember).where(
+            and_(
+                ConversationMember.conversation_id == conversation_id,
+                ConversationMember.user_id == current_user.id,
+            )
+        )
+    )
+    admin = admin_check.scalar_one_or_none()
+    if not admin:
+        raise HTTPException(status_code=403, detail="Not a member")
+
+    if user_id != current_user.id and admin.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can remove other members")
+
+    target_result = await db.execute(
+        select(ConversationMember).where(
+            and_(
+                ConversationMember.conversation_id == conversation_id,
+                ConversationMember.user_id == user_id,
+            )
+        )
+    )
+    target = target_result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    removed_user_result = await db.execute(select(User).where(User.id == user_id))
+    removed_user = removed_user_result.scalar_one_or_none()
+
+    await db.delete(target)
+
+    if user_id == current_user.id:
+        msg_content = f"{current_user.display_name} left the group"
+    else:
+        msg_content = f"{current_user.display_name} removed {removed_user.display_name if removed_user else 'a member'}"
+
+    system_msg = Message(
+        id=uuid.uuid4().hex,
+        conversation_id=conversation_id,
+        sender_id=current_user.id,
+        content=msg_content,
+        type="system",
+    )
+    db.add(system_msg)
+
+    conv.updated_at = datetime.utcnow()
+    await db.commit()
+
+
+@router.patch("/{conversation_id}/members/{user_id}/role", response_model=ConversationMemberResponse)
+async def change_member_role(
+    conversation_id: str,
+    user_id: str,
+    request: ChangeRoleRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if request.role not in ("admin", "member"):
+        raise HTTPException(status_code=400, detail="Role must be 'admin' or 'member'")
+
+    admin_check = await db.execute(
+        select(ConversationMember).where(
+            and_(
+                ConversationMember.conversation_id == conversation_id,
+                ConversationMember.user_id == current_user.id,
+            )
+        )
+    )
+    admin = admin_check.scalar_one_or_none()
+    if not admin or admin.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can change roles")
+
+    target_result = await db.execute(
+        select(ConversationMember).where(
+            and_(
+                ConversationMember.conversation_id == conversation_id,
+                ConversationMember.user_id == user_id,
+            )
+        )
+    )
+    target = target_result.scalar_one_or_none()
+    if not target:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    target.role = request.role
+    await db.commit()
+
+    user_result = await db.execute(select(User).where(User.id == user_id))
+    u = user_result.scalar_one_or_none()
+
+    return ConversationMemberResponse(
+        id=target.id,
+        conversation_id=target.conversation_id,
+        user_id=target.user_id,
+        role=target.role,
+        joined_at=target.joined_at,
+        last_read_message_id=target.last_read_message_id,
+        last_read_at=target.last_read_at,
+        user=user_to_response(u) if u else None,
+    )
