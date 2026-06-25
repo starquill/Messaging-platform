@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import init_db
-from app.routers import auth, users, conversations, messages, contacts
+from app.routers import auth, users, conversations, messages, contacts, ws
 
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ app.include_router(users.router)
 app.include_router(conversations.router)
 app.include_router(messages.router)
 app.include_router(contacts.router)
+app.include_router(ws.router)
 
 
 @app.get("/api/health")
