@@ -7,9 +7,10 @@ import { getInitials, formatLastSeen } from "@/lib/utils";
 
 interface ChatHeaderProps {
   conversation: Conversation;
+  onInfoClick?: () => void;
 }
 
-export default function ChatHeader({ conversation }: ChatHeaderProps) {
+export default function ChatHeader({ conversation, onInfoClick }: ChatHeaderProps) {
   const router = useRouter();
   const { typingUsers } = useChatStore();
 
@@ -62,6 +63,18 @@ export default function ChatHeader({ conversation }: ChatHeaderProps) {
           {subtitle}
         </p>
       </div>
+
+      {onInfoClick && (
+        <button
+          onClick={onInfoClick}
+          className="rounded-full p-2 text-text-secondary hover:bg-bg-hover"
+          title="Group info"
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

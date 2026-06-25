@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import ChatHeader from "@/components/chat/ChatHeader";
 import MessageList from "@/components/chat/MessageList";
 import MessageInput from "@/components/chat/MessageInput";
+import GroupInfoPanel from "@/components/group/GroupInfoPanel";
 
 export default function ConversationPage() {
   const params = useParams();
@@ -19,6 +20,7 @@ export default function ConversationPage() {
     fetchMessages,
     markAsRead,
   } = useChatStore();
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
 
   useEffect(() => {
     if (!activeConversation || activeConversation.id !== conversationId) {
@@ -45,10 +47,18 @@ export default function ConversationPage() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-bg-chat">
-      <ChatHeader conversation={activeConversation} />
-      <MessageList conversationId={conversationId} currentUserId={user?.id || ""} />
-      <MessageInput conversationId={conversationId} />
+    <div className="flex h-full">
+      <div className="flex flex-1 flex-col bg-bg-chat">
+        <ChatHeader
+          conversation={activeConversation}
+          onInfoClick={activeConversation.type === "group" ? () => setShowGroupInfo(!showGroupInfo) : undefined}
+        />
+        <MessageList conversationId={conversationId} currentUserId={user?.id || ""} />
+        <MessageInput conversationId={conversationId} />
+      </div>
+      {showGroupInfo && activeConversation.type === "group" && (
+        <GroupInfoPanel conversation={activeConversation} onClose={() => setShowGroupInfo(false)} />
+      )}
     </div>
   );
 }
