@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Conversation } from "@/types";
+import { Conversation, Message } from "@/types";
 import { useChatStore } from "@/stores/chatStore";
 import { getInitials, formatLastSeen } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -25,6 +25,9 @@ export default function ChatHeader({ conversation, onInfoClick }: ChatHeaderProp
   const router = useRouter();
   const { typingUsers, updateConversation } = useChatStore();
   const [showTimerMenu, setShowTimerMenu] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Message[]>([]);
 
   const name =
     conversation.type === "direct"
@@ -56,6 +59,22 @@ export default function ChatHeader({ conversation, onInfoClick }: ChatHeaderProp
     subtitle = `${conversation.members.length} members`;
   }
 
+  const handleSearch = useCallback(async (query: string) => {
+    setSearchQuery(query);
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    try {
+      const data = await api.get<{ messages: Message[] }>(
+        `/api/conversations/${conversation.id}/messages/search?q=${encodeURIComponent(query)}`
+      );
+      setSearchResults(data.messages || []);
+    } catch {
+      setSearchResults([]);
+    }
+  }, [conversation.id]);
+
   const handleTimerChange = async (duration: number) => {
     setShowTimerMenu(false);
     try {
@@ -70,7 +89,7 @@ export default function ChatHeader({ conversation, onInfoClick }: ChatHeaderProp
   };
 
   return (
-    <div className="flex items-center gap-3 border-b border-border-color bg-bg-primary px-4 py-3">
+    <div className="relative flex items-center gap-3 border-b border-border-color bg-bg-primary px-4 py-3">
       <button
         onClick={() => router.push("/chat")}
         className="rounded-full p-1 text-text-secondary hover:bg-bg-hover md:hidden"
@@ -94,6 +113,16 @@ export default function ChatHeader({ conversation, onInfoClick }: ChatHeaderProp
           {subtitle}
         </p>
       </div>
+
+      <button
+        onClick={() => setShowSearch(!showSearch)}
+        className="rounded-full p-2 text-text-secondary hover:bg-bg-hover"
+        title="Search messages"
+      >
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </button>
 
       <div className="relative">
         <button
@@ -142,6 +171,32 @@ export default function ChatHeader({ conversation, onInfoClick }: ChatHeaderProp
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </button>
+      )}
+
+      {showSearch && (
+        <div className="absolute left-0 top-full z-40 w-full border-b border-border-color bg-bg-primary px-4 py-2 shadow-sm animate-fade-in-up">
+          <input
+            type="text"
+            placeholder="Search in conversation..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="w-full rounded-lg bg-bg-input px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none"
+            autoFocus
+          />
+          {searchResults.length > 0 && (
+            <div className="mt-2 max-h-48 overflow-y-auto">
+              {searchResults.map((msg) => (
+                <div key={msg.id} className="rounded-lg px-3 py-2 hover:bg-bg-hover">
+                  <p className="text-xs text-text-secondary">{msg.sender?.display_name}</p>
+                  <p className="truncate text-sm text-text-primary">{msg.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {searchQuery.length >= 2 && searchResults.length === 0 && (
+            <p className="mt-2 text-center text-xs text-text-secondary">No results</p>
+          )}
+        </div>
       )}
     </div>
   );

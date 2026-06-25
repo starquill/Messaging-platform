@@ -371,6 +371,39 @@ async def remove_reaction(
     await db.commit()
 
 
+@router.get("/search", response_model=MessageListResponse)
+async def search_messages(
+    conversation_id: str,
+    q: str = Query("", min_length=1),
+    limit: int = Query(20, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await verify_membership(conversation_id, current_user.id, db)
+
+    result = await db.execute(
+        select(Message)
+        .where(
+            Message.conversation_id == conversation_id,
+            Message.content.ilike(f"%{q}%"),
+            Message.type != "system",
+        )
+        .order_by(desc(Message.created_at))
+        .limit(limit)
+    )
+    messages = result.scalars().all()
+
+    message_responses = []
+    for msg in messages:
+        message_responses.append(await build_message_response(msg, db))
+
+    return MessageListResponse(
+        messages=list(reversed(message_responses)),
+        has_more=False,
+        next_cursor=None,
+    )
+
+
 @router.post("/read", status_code=status.HTTP_204_NO_CONTENT)
 async def mark_messages_read(
     conversation_id: str,
