@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
+import { Message } from "@/types";
 import ChatHeader from "@/components/chat/ChatHeader";
 import MessageList from "@/components/chat/MessageList";
 import MessageInput from "@/components/chat/MessageInput";
@@ -21,6 +22,7 @@ export default function ConversationPage() {
     markAsRead,
   } = useChatStore();
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
 
   useEffect(() => {
     if (!activeConversation || activeConversation.id !== conversationId) {
@@ -38,6 +40,10 @@ export default function ConversationPage() {
     }
   }, [conversationId, fetchMessages, markAsRead]);
 
+  useEffect(() => {
+    setReplyTo(null);
+  }, [conversationId]);
+
   if (!activeConversation) {
     return (
       <div className="flex h-full items-center justify-center bg-bg-secondary">
@@ -53,8 +59,16 @@ export default function ConversationPage() {
           conversation={activeConversation}
           onInfoClick={activeConversation.type === "group" ? () => setShowGroupInfo(!showGroupInfo) : undefined}
         />
-        <MessageList conversationId={conversationId} currentUserId={user?.id || ""} />
-        <MessageInput conversationId={conversationId} />
+        <MessageList
+          conversationId={conversationId}
+          currentUserId={user?.id || ""}
+          onReply={setReplyTo}
+        />
+        <MessageInput
+          conversationId={conversationId}
+          replyTo={replyTo}
+          onCancelReply={() => setReplyTo(null)}
+        />
       </div>
       {showGroupInfo && activeConversation.type === "group" && (
         <GroupInfoPanel conversation={activeConversation} onClose={() => setShowGroupInfo(false)} />

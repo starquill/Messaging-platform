@@ -128,6 +128,15 @@ class ApiClient {
     return res.json();
   }
 
+  async uploadForm<T>(path: string, formData: FormData): Promise<T> {
+    const res = await this.fetch(path, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) throw await this.parseError(res);
+    return res.json();
+  }
+
   private async parseError(res: Response): Promise<Error> {
     try {
       const data = await res.json();
