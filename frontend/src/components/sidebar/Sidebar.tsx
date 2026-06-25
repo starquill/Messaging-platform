@@ -18,7 +18,7 @@ export default function Sidebar({ wsSend }: SidebarProps) {
   const [activeTab, setActiveTab] = useState<"chats" | "contacts">("chats");
 
   return (
-    <aside className="flex h-full w-80 flex-col border-r border-border-color bg-bg-sidebar">
+    <aside className="flex h-full w-full flex-col border-r border-border-color bg-bg-sidebar">
       <SidebarHeader
         onNewChat={() => setShowNewChat(true)}
         onNewGroup={() => setShowCreateGroup(true)}

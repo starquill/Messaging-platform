@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
+import { useThemeStore } from "@/stores/themeStore";
 import { useRouter } from "next/navigation";
 
 interface SidebarHeaderProps {
@@ -13,6 +14,7 @@ interface SidebarHeaderProps {
 
 export default function SidebarHeader({ onNewChat, onNewGroup, searchQuery, onSearchChange }: SidebarHeaderProps) {
   const { user, logout } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
 
@@ -59,6 +61,12 @@ export default function SidebarHeader({ onNewChat, onNewGroup, searchQuery, onSe
                   <p className="text-sm font-medium text-text-primary">{user?.display_name}</p>
                   <p className="text-xs text-text-secondary">@{user?.username}</p>
                 </div>
+                <button
+                  onClick={() => { toggleTheme(); setShowMenu(false); }}
+                  className="w-full px-4 py-2 text-left text-sm text-text-primary hover:bg-bg-hover"
+                >
+                  {theme === "light" ? "Dark mode" : "Light mode"}
+                </button>
                 <button
                   onClick={handleLogout}
                   className="w-full px-4 py-2 text-left text-sm text-danger hover:bg-bg-hover"
