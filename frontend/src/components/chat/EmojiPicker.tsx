@@ -45,7 +45,7 @@ export default function EmojiPicker({ position, onSelect, onClose }: EmojiPicker
   return (
     <div
       ref={ref}
-      className="fixed z-50 rounded-xl border border-border-color bg-bg-primary p-2 shadow-xl"
+      className="fixed z-50 animate-scale-in rounded-xl border border-border-color bg-bg-primary p-2 shadow-xl"
       style={{ top: position.y, left: position.x }}
     >
       <div className="flex gap-1">

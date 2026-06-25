@@ -6,6 +6,7 @@ import SidebarHeader from "./SidebarHeader";
 import NewChatModal from "./NewChatModal";
 import CreateGroupModal from "@/components/group/CreateGroupModal";
 import ContactList from "@/components/contacts/ContactList";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface SidebarProps {
   wsSend: (event: string, data: Record<string, unknown>) => void;
@@ -16,6 +17,14 @@ export default function Sidebar({ wsSend }: SidebarProps) {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"chats" | "contacts">("chats");
+
+  useKeyboardShortcuts({
+    onNewChat: () => setShowNewChat(true),
+    onEscape: () => {
+      setShowNewChat(false);
+      setShowCreateGroup(false);
+    },
+  });
 
   return (
     <aside className="flex h-full w-full flex-col border-r border-border-color bg-bg-sidebar">

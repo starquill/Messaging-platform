@@ -60,7 +60,7 @@ export default function MessageContextMenu({
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 min-w-[160px] rounded-xl border border-border-color bg-bg-primary py-1.5 shadow-xl"
+      className="fixed z-50 min-w-[160px] animate-scale-in rounded-xl border border-border-color bg-bg-primary py-1.5 shadow-xl"
       style={{ top: position.y, left: position.x }}
     >
       <button
