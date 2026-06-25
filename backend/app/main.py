@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import init_db
+from app.routers import auth, users
 
 
 @asynccontextmanager
@@ -34,6 +35,9 @@ app.add_middleware(
 )
 
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+
+app.include_router(auth.router)
+app.include_router(users.router)
 
 
 @app.get("/api/health")
