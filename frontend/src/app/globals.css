@@ -8,7 +8,11 @@
   --bubble-outgoing: #2C6BED;
   --bg-primary: #FFFFFF;
   --bg-secondary: #F6F6F6;
+  --bg-sidebar: #F6F6F6;
+  --bg-chat: #EFEAE2;
   --bg-input: #F0F0F0;
+  --bg-hover: #E8E8E8;
+  --bg-active: #D9E7FD;
   --text-primary: #000000;
   --text-secondary: #5E5E5E;
   --text-on-blue: #FFFFFF;
@@ -26,7 +30,11 @@
   --bubble-outgoing: #2C6BED;
   --bg-primary: #1B1C1F;
   --bg-secondary: #232529;
+  --bg-sidebar: #1B1C1F;
+  --bg-chat: #0B141A;
   --bg-input: #2B2D31;
+  --bg-hover: #2B2D31;
+  --bg-active: #1C2C4A;
   --text-primary: #E9E9E9;
   --text-secondary: #8B8B8B;
   --text-on-blue: #FFFFFF;
@@ -42,9 +50,14 @@
   --color-signal-blue-light: var(--signal-blue-light);
   --color-bubble-incoming: var(--bubble-incoming);
   --color-bubble-outgoing: var(--bubble-outgoing);
+  --color-bubble-received: var(--bubble-incoming);
   --color-bg-primary: var(--bg-primary);
   --color-bg-secondary: var(--bg-secondary);
+  --color-bg-sidebar: var(--bg-sidebar);
+  --color-bg-chat: var(--bg-chat);
   --color-bg-input: var(--bg-input);
+  --color-bg-hover: var(--bg-hover);
+  --color-bg-active: var(--bg-active);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-on-blue: var(--text-on-blue);
