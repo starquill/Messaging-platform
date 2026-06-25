@@ -7,8 +7,8 @@ RUN npm ci
 
 COPY . .
 
-ENV NEXT_PUBLIC_API_URL=https://signal-backend.onrender.com
-ENV NEXT_PUBLIC_WS_URL=wss://signal-backend.onrender.com/ws
+ENV NEXT_PUBLIC_API_URL=https://signal-backend-pz3f.onrender.com
+ENV NEXT_PUBLIC_WS_URL=wss://signal-backend-pz3f.onrender.com/ws
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build
